@@ -2,5 +2,8 @@
 name = "SysYust-again"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.81.0"
 
 [dependencies]
+clap = "4.5.30"
+peg = "=0.8.4"
