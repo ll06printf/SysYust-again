@@ -1,6 +1,5 @@
+use std::path::PathBuf;
 use clap::Parser;
-
-
 
 #[derive(clap::Parser, Debug)]
 #[command(name = "sysyust")]
@@ -8,7 +7,11 @@ use clap::Parser;
 #[command(about = "The SysY2022 Compiler.", long_about = None)]
 struct Args {
     #[command(flatten)]
-    target: TransformTarget
+    target: TransformTarget,
+
+    /// sources file to parse. Only support excatly one file.
+    source: Vec<PathBuf>,
+
 }
 
 #[derive(clap::Args, Debug)]
@@ -52,6 +55,12 @@ fn map_argments_to_target(arg: &Args) -> Target {
 
 fn main() {
     let arg = Args::parse();
-    let target = map_argments_to_target(&arg);
-    println!("{:?}", target);
+    let target : Target = map_argments_to_target(&arg);
+    let sources = arg.source;
+
+    if sources.len() != 1 {
+        panic!("Only support exactly ONE source file.");
+    }
+
+    println!("{:?} for source file {:?}", target, sources);
 }
