@@ -5,6 +5,6 @@ edition = "2021"
 rust-version = "1.81.0"
 
 [dependencies]
-peg = "=0.8.4"
+winnow = "0.7.3"
 sysyust_util = {path = "../util"}
 sysyust_ast = {path = "../ast"}
