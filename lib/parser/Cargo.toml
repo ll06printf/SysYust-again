@@ -1,0 +1,10 @@
+[package]
+name = "sysyust_parser"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.81.0"
+
+[dependencies]
+peg = "=0.8.4"
+sysyust_util = {path = "../util"}
+sysyust_ast = {path = "../ast"}
