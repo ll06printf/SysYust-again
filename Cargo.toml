@@ -13,6 +13,7 @@ members= [
     "lib/interpreter",
     "lib/codegen",
     "lib/parser",
+    "lib/visitor_template",
 ]
 
 [dependencies]
