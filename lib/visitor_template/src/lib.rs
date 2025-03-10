@@ -74,6 +74,7 @@ fn get_enum_variant_names(t: DeriveInput) -> Vec<VariantPair> {
 
 mod sysy_macro_gen {
 
+    use proc_macro::Ident;
     use proc_macro2::{TokenStream, Span};
 
     use quote::quote;
@@ -83,8 +84,8 @@ mod sysy_macro_gen {
         let transformer_id = gen_transformer_id(ident);
         let accept_function = gen_accept_function(variants);
         quote! {
-            impl Transfomerable for #ident {
-                fn transform(self, tf: &mut impl #transformer_id) -> Self {
+            impl #ident {
+                fn transform(self, tr: &mut impl #transformer_id) -> Self {
                     #accept_function
                 }
             }
@@ -96,7 +97,7 @@ mod sysy_macro_gen {
             |VariantPair{ident:id, structure:st}| {
                 let fn_name = gen_transform_fn_name(id);
                 quote! {
-                    #id(v) => tr.#fn_name(v),
+                    Self::#id(v) => tr.#fn_name(v)
                 }
             }
         );
@@ -113,23 +114,21 @@ mod sysy_macro_gen {
 
     fn gen_visitor_trait(ident: &syn::Ident, variants: &Vec<VariantPair>) -> TokenStream {
         let transformer_name = gen_transformer_id(ident);
-        let visitor_functions = variants.iter().map(gen_visitor_function);
+        let visitor_functions = variants.iter().map(|v|gen_visitor_function(ident, v));
         quote! {
             trait #transformer_name {
-                type EnumType = #ident;
-
                 #(#visitor_functions)*
             }
         }
     }
 
-    fn gen_visitor_function(variant: &VariantPair) -> TokenStream {
+    fn gen_visitor_function(enum_id: &syn::Ident, variant: &VariantPair) -> TokenStream {
         let fn_name = gen_transform_fn_name(&variant.ident);
         let vairant_name = variant.ident.clone();
         let fn_param = variant.structure.clone();
         quote! {
-            fn #fn_name(&mut self, param: #fn_param) -> EnumType {
-                EnumType::#vairant_name(param)
+            fn #fn_name(&mut self, param: #fn_param) -> #enum_id {
+                #enum_id::#vairant_name(param)
             }
         }
     }
@@ -142,12 +141,12 @@ mod sysy_macro_gen {
      * 生成一个 enum 对应的访问其的类型名
      */
     fn gen_transformer_id(enum_id: &syn::Ident) -> syn::Ident {
-        let transfomer_name = enum_id.to_string() + "Transfomer";
+        let transfomer_name = enum_id.to_string() + "Transformer";
         syn::Ident::new(&transfomer_name, Span::call_site())
     }
 
     fn gen_transform_fn_name(variant_id: &syn::Ident) -> syn::Ident {
-        let fn_name = String::from("transfome") + &(variant_id.to_string());
+        let fn_name = String::from("transforme") + &(variant_id.to_string());
         syn::Ident::new(&fn_name, Span::call_site())
     }
 
