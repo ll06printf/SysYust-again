@@ -21,8 +21,8 @@ pub fn transformable_derive(item: TokenStream) -> TokenStream {
     let id = input.ident.clone();
 
     let elements = get_enum_variant_names(input);
-    let accept = sysy_macro_gen::impl_accept_function(&id, &elements);
-    let transformer = sysy_macro_gen::impl_transfomer(&id, &elements);
+    let accept = sysy_macro_gen::impl_accept_fn(&id, &elements);
+    let transformer = sysy_macro_gen::impl_transformer(&id, &elements);
     TokenStream::from(proc_macro2::TokenStream::from_iter([accept, transformer].into_iter()))
 }
 
@@ -74,15 +74,14 @@ fn get_enum_variant_names(t: DeriveInput) -> Vec<VariantPair> {
 
 mod sysy_macro_gen {
 
-    use proc_macro::Ident;
     use proc_macro2::{TokenStream, Span};
 
     use quote::quote;
     use super::VariantPair;
 
-    pub(crate) fn impl_accept_function(ident: &syn::Ident, variants: &Vec<VariantPair>) -> TokenStream {
+    pub(crate) fn impl_accept_fn(ident: &syn::Ident, variants: &Vec<VariantPair>) -> TokenStream {
         let transformer_id = gen_transformer_id(ident);
-        let accept_function = gen_accept_function(variants);
+        let accept_function = gen_accept_fn(variants);
         quote! {
             impl #ident {
                 fn transform(self, tr: &mut impl #transformer_id) -> Self {
@@ -92,9 +91,9 @@ mod sysy_macro_gen {
         }
     }
 
-    fn gen_accept_function(variants: &Vec<VariantPair>) -> TokenStream {
+    fn gen_accept_fn(variants: &Vec<VariantPair>) -> TokenStream {
         let match_item = variants.iter().map(
-            |VariantPair{ident:id, structure:st}| {
+            |VariantPair{ident:id, structure:_}| {
                 let fn_name = gen_transform_fn_name(id);
                 quote! {
                     Self::#id(v) => tr.#fn_name(v)
@@ -108,27 +107,41 @@ mod sysy_macro_gen {
         }
     }
 
-    pub(crate) fn impl_transfomer(ident: &syn::Ident, variants: &Vec<VariantPair>) -> TokenStream {
-        gen_visitor_trait(ident, variants)
+    pub(crate) fn impl_transformer(ident: &syn::Ident, variants: &Vec<VariantPair>) -> TokenStream {
+        gen_transformer_trait(ident, variants)
     }
 
-    fn gen_visitor_trait(ident: &syn::Ident, variants: &Vec<VariantPair>) -> TokenStream {
+    fn gen_transformer_trait(ident: &syn::Ident, variants: &Vec<VariantPair>) -> TokenStream {
         let transformer_name = gen_transformer_id(ident);
-        let visitor_functions = variants.iter().map(|v|gen_visitor_function(ident, v));
+        let transform_functions= variants.iter().map(|v| gen_transform_fn(ident, v));
+        let visit_functions = variants.iter().map(|v| gen_visit_fn(v));
         quote! {
             trait #transformer_name {
-                #(#visitor_functions)*
+                #(#visit_functions)*
+                #(#transform_functions)*
             }
         }
     }
 
-    fn gen_visitor_function(enum_id: &syn::Ident, variant: &VariantPair) -> TokenStream {
+    fn gen_transform_fn(enum_id: &syn::Ident, variant: &VariantPair) -> TokenStream {
         let fn_name = gen_transform_fn_name(&variant.ident);
-        let vairant_name = variant.ident.clone();
+        let visit_fn_name = gen_visit_fn_name(&variant.ident);
+        let variant_name = variant.ident.clone();
         let fn_param = variant.structure.clone();
         quote! {
             fn #fn_name(&mut self, param: #fn_param) -> #enum_id {
-                #enum_id::#vairant_name(param)
+                self.#visit_fn_name(&param);
+                #enum_id::#variant_name(param)
+            }
+        }
+    }
+
+    fn gen_visit_fn(variant: &VariantPair) -> TokenStream {
+        let fn_name = gen_visit_fn_name(&variant.ident);
+        let fn_param = variant.structure.clone();
+        quote! {
+            fn #fn_name(&mut self, param: &#fn_param) -> () {
+
             }
         }
     }
@@ -141,13 +154,44 @@ mod sysy_macro_gen {
      * 生成一个 enum 对应的访问其的类型名
      */
     fn gen_transformer_id(enum_id: &syn::Ident) -> syn::Ident {
-        let transfomer_name = enum_id.to_string() + "Transformer";
-        syn::Ident::new(&transfomer_name, Span::call_site())
+        let transformer_name = enum_id.to_string() + "Transformer";
+        syn::Ident::new(&transformer_name, Span::call_site())
     }
 
     fn gen_transform_fn_name(variant_id: &syn::Ident) -> syn::Ident {
-        let fn_name = String::from("transforme") + &(variant_id.to_string());
+        let fn_name = String::from("transform_") + &*to_snake_case(&*variant_id.to_string());
         syn::Ident::new(&fn_name, Span::call_site())
+    }
+
+    fn gen_visit_fn_name(variant_id: &syn::Ident) -> syn::Ident {
+        let fn_name = String::from("visit_") + &*to_snake_case(&*variant_id.to_string());
+        syn::Ident::new(&fn_name, Span::call_site())
+    }
+    fn to_snake_case(s: &str) -> String {
+        let mut snake = String::new();
+        let mut prev_char = '_'; // 初始状态假设前一个字符是分隔符
+
+        for c in s.chars() {
+            if c.is_uppercase() {
+                // 前一个字符不是分隔符且当前是大写字母时，插入下划线
+                if !prev_char.is_ascii_punctuation() && prev_char != '_' {
+                    snake.push('_');
+                }
+                snake.push(c.to_ascii_lowercase());
+            } else if c == '-' || c == ' ' {
+                // 将连字符和空格转换为下划线
+                if !snake.ends_with('_') {
+                    snake.push('_');
+                }
+            } else {
+                // 直接添加小写字符
+                snake.push(c);
+            }
+            prev_char = c;
+        }
+
+        // 移除首尾多余的下划线并转为全小写
+        snake.trim_matches('_').to_ascii_lowercase()
     }
 
 }

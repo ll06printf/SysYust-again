@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod tests {
 
-    use std::{ops::Add, thread::panicking};
-
     use sysyust_visitor_template::Transformable;
 
     #[derive(Transformable)]
@@ -23,8 +21,8 @@ mod tests {
 
     }
     impl ExprTransformer for FoldTransformer {
-        fn transformeAdd(&mut self, param:AddExpr) -> Expr {
-            let AddExpr{lhs, rhs} = param;
+        fn transform_add(&mut self, param: AddExpr) -> Expr {
+            let AddExpr { lhs, rhs } = param;
 
             let mut ans = 0;
             if let Expr::Atom(lhs) = lhs.transform(self) {
@@ -39,8 +37,7 @@ mod tests {
                 panic!("Unexpected");
             }
 
-            return Expr::Atom(AtomVal{val:ans});
-
+            return Expr::Atom(AtomVal { val: ans });
         }
     }
 
