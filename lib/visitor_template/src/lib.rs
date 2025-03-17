@@ -66,10 +66,10 @@ fn get_enum_variant_names(t: DeriveInput) -> Vec<VariantPair> {
 // -- 代码生成 -- //
 
 mod sysy_macro_gen {
-
+    use std::collections::HashMap;
     use proc_macro2::{TokenStream, Span};
 
-    use quote::{quote, ToTokens};
+    use quote::{quote};
     use super::VariantPair;
 
     /// 实现 Transform 和接收函数
@@ -199,13 +199,38 @@ mod sysy_macro_gen {
         let mut param_names = Vec::new();
         let mut param_type = Vec::new();
 
-        for ty in variant_param.iter() {
-            let name = ty.to_token_stream().to_string();
-            let snake_name = syn::Ident::new(&to_snake_case(&name), Span::call_site());
+        let mut unnamed_param_count = 0;
+        let mut named_param_count = HashMap::new();
 
-            param_names.push(snake_name.clone());
+        for ty in variant_param.iter() {
+            // 类型名到参数名转换
+            if let syn::Type::Path(pt) = ty {
+                let name : Vec<String> = pt.path.segments.iter().map(
+                    |syn::PathSegment{ident:id, .. }| {
+                        to_snake_case(id.to_string().as_str())
+                    }
+                ).collect();
+                let mut name = name.join("_");
+
+                let  name_count = named_param_count.entry(name.clone())
+                    .and_modify(|c| *c += 1)
+                    .or_insert(0);
+                name += name_count.to_string().as_str();
+
+                let snake_name = syn::Ident::new(name.as_str(), Span::call_site());
+
+                param_names.push(snake_name.clone());
+            } else {
+                let name = String::from("p") + unnamed_param_count.to_string().as_str();
+                let id = syn::Ident::new(&name, Span::call_site());
+
+                param_names.push(id.clone());
+                unnamed_param_count += 1;
+            }
             param_type.push(ty.clone());
         }
+
+
         (param_names, param_type)
 
     }
