@@ -1,0 +1,9 @@
+[package]
+name = "sysyust_interpreter"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.81.0"
+
+[dependencies]
+sysyust_util = {path = "../util"}
+sysyust_ast = {path = "../ast"}

@@ -1,0 +1,19 @@
+[package]
+name = "SysYust-again"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.81.0"
+
+[workspace]
+members= [
+    "lib/util",
+    "lib/ast",
+    "lib/ir",
+    "lib/ast_ir",
+    "lib/interpreter",
+    "lib/codegen",
+    "lib/parser",
+]
+
+[dependencies]
+clap = { version = "4.5.30", features = ["derive"] }
