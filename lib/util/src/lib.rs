@@ -1,1 +1,1 @@
-mod id_allocator;
+pub mod id_allocator;

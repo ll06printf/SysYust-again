@@ -10,6 +10,6 @@
 - `ast` AST表示
 - `parser` 解析器
 - `interpreter` 解释器
-- `ast_ir` AST2IR 转换
+- `ast_to_ir` AST2IR 转换
 - `ir` IR表示
 - `codegen` 代码生成器

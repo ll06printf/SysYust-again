@@ -9,7 +9,7 @@ members= [
     "lib/util",
     "lib/ast",
     "lib/ir",
-    "lib/ast_ir",
+    "lib/ast_to_ir",
     "lib/interpreter",
     "lib/codegen",
     "lib/parser",

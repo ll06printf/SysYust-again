@@ -1,5 +1,5 @@
 [package]
-name = "sysyust_ast_ir"
+name = "sysyust_ast_to_ir"
 version = "0.0.0"
 edition = "2021"
 rust-version = "1.81.0"
